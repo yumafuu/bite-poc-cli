@@ -9,7 +9,7 @@ function formatDate(date) {
 }
 
 // 今日から一週間分の日付を生成
-const days = Array.from({ length: 11 }, (_, i) => {
+const days = Array.from({ length: 12 }, (_, i) => {
   const date = new Date(today);
   date.setDate(today.getDate() + i);
 
@@ -74,14 +74,13 @@ const meetings = [
   },
 ];
 
-// スケジュールをランダムに生成
-const schedule = Array.from({ length: 20 }, () => {
-  const date = days[Math.floor(Math.random() * days.length)];
-  const time = times[Math.floor(Math.random() * times.length)];
-  const meeting = meetings[Math.floor(Math.random() * meetings.length)];
-
-  return { date, time, meeting };
-});
+// 各時間帯に各ミーティングを一つずつ生成
+const schedule = days.flatMap((date) => {
+  return times.flatMap((time, i) => {
+    const meeting = meetings[i];
+    return { date, time, meeting };
+  });
+})
 
 /**
  * スケジュールをフィルタリングする関数

@@ -157,7 +157,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			if m.inputmode == 1 {
-				m.textarea.SetValue(m.choices[m.currentChoiceindex])
+				if len(m.choices) > 0 && m.currentChoiceindex < len(m.choices) {
+					m.textarea.SetValue(m.choices[m.currentChoiceindex])
+				}
 			}
 			v := m.textarea.Value()
 
