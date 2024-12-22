@@ -13,7 +13,6 @@ func GetCandidate(plugin, input string) []string {
 	rm := registry.Enable(vm)
 
 	var v goja.Value
-	// TODO: ステートから現在のpluginに対応するjsファイルを取得
 	fn, err := rm.Require(fmt.Sprintf("../plugins/%s/index.js", plugin))
 	if err != nil {
 		panic(err)

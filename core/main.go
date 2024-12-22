@@ -13,8 +13,16 @@ import (
 )
 
 var (
-	currentPluginstyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
-	// currentChoicestyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
+	currentPluginstyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	currentChoicestyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+
+	// TODO: Get From Config
+	plugins = []string{
+		"default",
+		"preferences",
+		"date-ja",
+		"my-plans-mock",
+	}
 )
 
 func main() {
@@ -41,7 +49,7 @@ type model struct {
 
 func initialModel() model {
 	ta := textarea.New()
-	ta.Placeholder = "Send a message..."
+	ta.Placeholder = "Type something..."
 	ta.Focus()
 
 	ta.Prompt = "┃ "
@@ -52,20 +60,13 @@ func initialModel() model {
 	ta.ShowLineNumbers = false
 	ta.KeyMap.InsertNewline.SetEnabled(true)
 
-	// TODO: Get From Config
-	plugins := []string{
-		"preferences",
-		"date-ja",
-	}
-
 	mvp := viewport.New(30, 5)
 	mvp.SetContent(`Bite-Poc is poc of my new IME `)
 
-	pvp := viewport.New(30, 2)
-
+	pvp := viewport.New(100, 2)
 	pvp.SetContent(GetPluginStr(plugins, 0))
 
-	cvp := viewport.New(30, 20)
+	cvp := viewport.New(100, 20)
 	cvp.SetContent("[Empty]")
 
 	return model{
@@ -111,39 +112,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.inputmode = 0
 			return m, nil
 		case "up", "ctrl+k":
+			if m.inputmode == 2 {
+				m.currentChoiceindex = 0
+			}
 			m.inputmode = 1
 			if m.currentChoiceindex > 0 {
 				m.currentChoiceindex = m.currentChoiceindex - 1
 			}
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
 			return m, nil
 		case "down", "ctrl+j":
+			if m.inputmode == 2 {
+				m.currentChoiceindex = 0
+			}
 			m.inputmode = 1
 			if m.currentChoiceindex < len(m.choices)-1 {
 				m.currentChoiceindex = m.currentChoiceindex + 1
 			}
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
 			return m, nil
 		case "ctrl+l":
 			m.inputmode = 2
+			m.currentChoiceindex = 0
 			if m.currentPluginindex < len(m.plugins)-1 {
 				m.currentPluginindex = m.currentPluginindex + 1
 			}
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 
 			return m, nil
 		case "ctrl+h":
 			m.inputmode = 2
+			m.currentChoiceindex = 0
 			if m.currentPluginindex > 0 {
 				m.currentPluginindex = m.currentPluginindex - 1
 			}
 
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 			return m, nil
 		case "enter":
@@ -175,7 +184,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
 
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
 			return m, cmd
 		}
 
@@ -202,11 +211,11 @@ func GetPluginStr(plugins []string, current int) string {
 	return strings.Join(pluginstrs, " ")
 }
 
-func GetCandidateStr(choices []string, current int) string {
+func GetCandidateStr(choices []string, mode, current int) string {
 	var choicestrs []string
 	for i, c := range choices {
-		if i == current {
-			choicestrs = append(choicestrs, currentPluginstyle.Render(c))
+		if i == current && mode == 1 {
+			choicestrs = append(choicestrs, currentChoicestyle.Render(c))
 		} else {
 			choicestrs = append(choicestrs, c)
 		}
