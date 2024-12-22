@@ -1,0 +1,14 @@
+{
+  "name": "plugin-preferences",
+  "module": "index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "fuse.js": "^7.0.0"
+  }
+}
