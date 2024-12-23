@@ -94,19 +94,20 @@ const schedule = days.flatMap((date) => {
  */
 function filterSchedules(input) {
   const lowerInput = input.toLowerCase();
+  let result = [];
   if (!lowerInput) {
-    return [];
+    result = schedule;
+  } else {
+    result = schedule.filter(({ date, time, meeting }) => {
+      const nameMatch = meeting.name.toLowerCase().includes(lowerInput);
+      const yomiMatch = meeting.yomi.toLowerCase().includes(lowerInput);
+      const dateMatch = date.yomi.toLowerCase().includes(lowerInput)
+        || date.label.toLowerCase().includes(lowerInput);
+      const timeMatch = time.toLowerCase().includes(lowerInput);
+
+      return nameMatch || yomiMatch || dateMatch || timeMatch;
+    });
   }
-
-  const result = schedule.filter(({ date, time, meeting }) => {
-    const nameMatch = meeting.name.toLowerCase().includes(lowerInput);
-    const yomiMatch = meeting.yomi.toLowerCase().includes(lowerInput);
-    const dateMatch = date.yomi.toLowerCase().includes(lowerInput)
-      || date.label.toLowerCase().includes(lowerInput);
-    const timeMatch = time.toLowerCase().includes(lowerInput);
-
-    return nameMatch || yomiMatch || dateMatch || timeMatch;
-  });
 
   return result.map(({ date, time, meeting }) => {
     return `${date.label} ${time} ${meeting.name}`;

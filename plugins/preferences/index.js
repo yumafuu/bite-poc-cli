@@ -49,10 +49,6 @@ const list = [
 ];
 
 const fn = (input) => {
-  if (!input) {
-    return [];
-  }
-
   // prefectureのenglishとinputが曖昧一致するものを返す
   const result = list.filter(item => {
     const inputChars = input.split("").map(char => char.toLowerCase());

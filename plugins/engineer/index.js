@@ -18,7 +18,9 @@ const dict = [
   { name: 'コードレビューのフィードバックありがとうございます', yomi: 'koodo review no feedback arigatou gozaimasu' },
   { name: 'リリースノートを作成しました', yomi: 'release note o sakusei shimashita' },
   { name: 'サーバーがダウンしています', yomi: 'server ga daun shiteimasu' },
-  { name: 'パフォーマンスを改善しました', yomi: 'performance o kaizen shimashita' }
+  { name: 'パフォーマンスを改善しました', yomi: 'performance o kaizen shimashita' },
+  { name: 'リスケさせていただきたいです', yomi: 'risuke sasete' },
+  { name: '次のミーティング', yomi: 'tugino meeting' },
 ];
 
 

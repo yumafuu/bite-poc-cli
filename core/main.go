@@ -16,7 +16,6 @@ type (
 	inputmodeEnum int
 
 	plugin struct {
-		order    int
 		name     string
 		shortcut string
 	}
@@ -47,12 +46,14 @@ var (
 
 	// TODO: Get From Config
 	plugins = []plugin{
-		{0, "default", "ctrl+a"},
-		{1, "bussiness-words", "ctrl+b"},
-		{2, "my-plans-mock", "ctrl+p"},
-		{3, "date-ja", "ctrl+d"},
-		{4, "my-friends", "ctrl+o"},
-		{5, "preferences", "ctrl+e"},
+		{"default", "ctrl+a"},
+		{"prefix", "ctrl+e"},
+		{"state", "ctrl+u"},
+		{"engineer", "ctrl+b"},
+		{"plans", "ctrl+p"},
+		{"date-ja", "ctrl+d"},
+		{"friends", "ctrl+o"},
+		{"preferences", ""},
 	}
 )
 
@@ -79,7 +80,7 @@ func initialModel() model {
 
 	mvp := viewport.New(30, 8)
 
-	pvp := viewport.New(100, 2)
+	pvp := viewport.New(300, 2)
 	pvp.SetContent(GetPluginStr(plugins, 0))
 
 	cvp := viewport.New(100, 20)
@@ -179,7 +180,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentChoiceindex = 0
 			m.choices = []string{}
 			m.choicesviewport.SetContent("")
-			m.currentPluginindex = 0
+			// m.currentPluginindex = 0
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 			return m, nil
 		default:
@@ -223,14 +224,21 @@ func GetPluginStr(plugins []plugin, current int) string {
 	var pluginstrs []string
 	for i, p := range plugins {
 		if i == current {
-			name := currentPluginstyle.Render(p.name)
-			shortcut := currentPluginstyle.Render(p.shortcut)
-			// remove `ctrl+` prefix
-			shortcut = strings.Replace(shortcut, "ctrl+", "", 1)
-			pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, name))
+			styledname := currentPluginstyle.Render(p.name)
+			if p.shortcut == "" {
+				pluginstrs = append(pluginstrs, fmt.Sprintf("%s", styledname))
+			} else {
+				shortcut := currentPluginstyle.Render(p.shortcut)
+				shortcut = strings.Replace(shortcut, "ctrl+", "", 1)
+				pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, styledname))
+			}
 		} else {
 			shortcut := strings.Replace(p.shortcut, "ctrl+", "", 1)
-			pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, p.name))
+			if p.shortcut == "" {
+				pluginstrs = append(pluginstrs, fmt.Sprintf("%s", p.name))
+			} else {
+				pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, p.name))
+			}
 		}
 	}
 	return strings.Join(pluginstrs, " ")

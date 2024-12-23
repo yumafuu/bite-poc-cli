@@ -129,10 +129,10 @@ function findMatchingDates(input) {
   const today = new Date();
   const normalizedInput = input.trim().toLowerCase();
 
-  // 入力が空の場合は空配列を返す
-  if (normalizedInput === "") {
-    return [];
-  }
+  // // 入力が空の場合は空配列を返す
+  // if (normalizedInput === "") {
+  //   return [];
+  // }
 
   // 一致する表現をフィルタリング
   const matchedExpressions = dateExpressions.filter(expr =>

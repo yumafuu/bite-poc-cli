@@ -24,9 +24,6 @@ const friends = [
 
 const fn = (input) => {
   input = input.toLowerCase();
-  if (!input) {
-    return [];
-  }
 
   return friends.filter(({ name, yomi }) => {
     const nameMatch = name.toLowerCase().includes(input);
