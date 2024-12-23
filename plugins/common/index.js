@@ -4,6 +4,8 @@ const dict = [
   { name: 'よろしくおねがいします！', yomi: 'yorosikuonegaisimasu' },
   { name: 'ごめんなさい！', yomi: 'gomennasai' },
   { name: 'すみません', yomi: 'sumimasen' },
+  { name: '5分ほど開始を遅らせてください', yomi: 'gohunhodokaisiwookurasetekudasai' },
+  { name: '10分ほど開始を遅らせてください', yomi: 'juppunhunhodokaisiwookurasetekudasai' },
 ];
 
 

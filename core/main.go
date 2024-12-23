@@ -47,7 +47,7 @@ var (
 	// TODO: Get From Config
 	plugins = []plugin{
 		{"default", "ctrl+a"},
-		{"prefix", "ctrl+e"},
+		{"common", "ctrl+e"},
 		{"state", "ctrl+u"},
 		{"engineer", "ctrl+b"},
 		{"plans", "ctrl+p"},
