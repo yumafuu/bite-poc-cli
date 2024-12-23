@@ -126,9 +126,6 @@ function isConsonant(char) {
 }
 
 const fn = (input) => {
-  if (!input) {
-    return [];
-  }
   const item = romajiToHiragana(input);
   return [item]
 }

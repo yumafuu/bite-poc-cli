@@ -99,7 +99,6 @@ function filterSchedules(input) {
   }
 
   const result = schedule.filter(({ date, time, meeting }) => {
-
     const nameMatch = meeting.name.toLowerCase().includes(lowerInput);
     const yomiMatch = meeting.yomi.toLowerCase().includes(lowerInput);
     const dateMatch = date.yomi.toLowerCase().includes(lowerInput)

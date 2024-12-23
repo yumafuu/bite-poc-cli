@@ -7,13 +7,13 @@ import (
 	"github.com/dop251/goja_nodejs/require"
 )
 
-func GetCandidate(plugin, input string) []string {
+func GetCandidate(plugin plugin, input string) []string {
 	vm := goja.New()
 	registry := new(require.Registry)
 	rm := registry.Enable(vm)
 
 	var v goja.Value
-	fn, err := rm.Require(fmt.Sprintf("../plugins/%s/index.js", plugin))
+	fn, err := rm.Require(fmt.Sprintf("../plugins/%s/index.js", plugin.name))
 	if err != nil {
 		panic(err)
 	}

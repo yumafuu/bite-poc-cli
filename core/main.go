@@ -12,17 +12,47 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type (
+	inputmodeEnum int
+
+	plugin struct {
+		order    int
+		name     string
+		shortcut string
+	}
+
+	model struct {
+		messagesviewport   viewport.Model
+		messages           []string
+		textarea           textarea.Model
+		pluginviewport     viewport.Model
+		plugins            []plugin
+		currentPluginindex int
+		choices            []string
+		choicesviewport    viewport.Model
+		currentChoiceindex int
+		err                error
+	}
+)
+
+const (
+	Typing inputmodeEnum = iota
+	SelectPlugin
+	SelectCandidate
+)
+
 var (
 	currentPluginstyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	currentChoicestyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 
 	// TODO: Get From Config
-	plugins = []string{
-		"default",
-		"preferences",
-		"date-ja",
-		"my-plans-mock",
-		"my-friends",
+	plugins = []plugin{
+		{0, "default", "ctrl+a"},
+		{1, "bussiness-words", "ctrl+b"},
+		{2, "my-plans-mock", "ctrl+p"},
+		{3, "date-ja", "ctrl+d"},
+		{4, "my-friends", "ctrl+o"},
+		{5, "preferences", "ctrl+e"},
 	}
 )
 
@@ -33,30 +63,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}
 }
-
-type (
-	inputmodeEnum int
-
-	model struct {
-		messagesviewport   viewport.Model
-		messages           []string
-		textarea           textarea.Model
-		pluginviewport     viewport.Model
-		plugins            []string
-		currentPluginindex int
-		choices            []string
-		choicesviewport    viewport.Model
-		currentChoiceindex int
-		inputmode          inputmodeEnum
-		err                error
-	}
-)
-
-const (
-	Typing inputmodeEnum = iota
-	SelectPlugin
-	SelectCandidate
-)
 
 func initialModel() model {
 	ta := textarea.New()
@@ -72,7 +78,6 @@ func initialModel() model {
 	ta.KeyMap.InsertNewline.SetEnabled(true)
 
 	mvp := viewport.New(30, 8)
-	mvp.SetContent(`Bite-Poc is poc of my new IME `)
 
 	pvp := viewport.New(100, 2)
 	pvp.SetContent(GetPluginStr(plugins, 0))
@@ -89,7 +94,6 @@ func initialModel() model {
 		choices:            []string{},
 		choicesviewport:    cvp,
 		currentChoiceindex: 0,
-		inputmode:          0,
 		err:                nil,
 	}
 }
@@ -119,24 +123,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			m.inputmode = Typing
 			return m, nil
 		case "up", "ctrl+k":
-			m.inputmode = SelectCandidate
 			if m.currentChoiceindex > 0 {
 				m.currentChoiceindex = m.currentChoiceindex - 1
 			}
 			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, nil
 		case "down", "ctrl+j":
-			m.inputmode = SelectCandidate
 			if m.currentChoiceindex < len(m.choices)-1 {
 				m.currentChoiceindex = m.currentChoiceindex + 1
 			}
 			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, nil
 		case "ctrl+l":
-			m.inputmode = SelectPlugin
 			m.currentChoiceindex = 0
 			if m.currentPluginindex < len(m.plugins)-1 {
 				m.currentPluginindex = m.currentPluginindex + 1
@@ -148,7 +148,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, nil
 		case "ctrl+h":
-			m.inputmode = SelectPlugin
 			m.currentChoiceindex = 0
 			if m.currentPluginindex > 0 {
 				m.currentPluginindex = m.currentPluginindex - 1
@@ -177,18 +176,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.messagesviewport.SetContent(strings.Join(m.messages, "\n"))
 			m.messagesviewport.GotoBottom()
 			m.textarea.Reset()
+			m.currentChoiceindex = 0
 			m.choices = []string{}
 			m.choicesviewport.SetContent("")
 			m.currentPluginindex = 0
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 			return m, nil
 		default:
+			// shortcut hit
+			for i, p := range m.plugins {
+				if msg.String() == p.shortcut {
+					m.currentPluginindex = i
+					currentPlugin := m.plugins[m.currentPluginindex]
+					m.choices = GetCandidate(currentPlugin, m.textarea.Value())
+					m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
+					m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
+					return m, nil
+				}
+			}
 			var cmd tea.Cmd
 			m.textarea, cmd = m.textarea.Update(msg)
 
-			// TODO: Get choices from Plugins
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
+
+			if m.currentChoiceindex >= len(m.choices) {
+				m.currentChoiceindex = len(m.choices) - 1
+			}
 
 			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, cmd
@@ -205,13 +219,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func GetPluginStr(plugins []string, current int) string {
+func GetPluginStr(plugins []plugin, current int) string {
 	var pluginstrs []string
 	for i, p := range plugins {
 		if i == current {
-			pluginstrs = append(pluginstrs, fmt.Sprintf("▶ %s", currentPluginstyle.Render(p)))
+			name := currentPluginstyle.Render(p.name)
+			shortcut := currentPluginstyle.Render(p.shortcut)
+			// remove `ctrl+` prefix
+			shortcut = strings.Replace(shortcut, "ctrl+", "", 1)
+			pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, name))
 		} else {
-			pluginstrs = append(pluginstrs, fmt.Sprintf("  %s", p))
+			shortcut := strings.Replace(p.shortcut, "ctrl+", "", 1)
+			pluginstrs = append(pluginstrs, fmt.Sprintf("[%s] %s", shortcut, p.name))
 		}
 	}
 	return strings.Join(pluginstrs, " ")
@@ -222,6 +241,7 @@ func GetCandidateStr(choices []string, current int) string {
 	for i, c := range choices {
 		if i == current {
 			choicestrs = append(choicestrs, fmt.Sprintf("▶ %s", currentChoicestyle.Render(c)))
+
 		} else {
 			choicestrs = append(choicestrs, fmt.Sprintf("  %s", c))
 		}
