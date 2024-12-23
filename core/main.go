@@ -22,6 +22,7 @@ var (
 		"preferences",
 		"date-ja",
 		"my-plans-mock",
+		"my-friends",
 	}
 )
 
@@ -33,19 +34,29 @@ func main() {
 	}
 }
 
-type model struct {
-	messagesviewport   viewport.Model
-	messages           []string
-	textarea           textarea.Model
-	pluginviewport     viewport.Model
-	plugins            []string
-	currentPluginindex int
-	choices            []string
-	choicesviewport    viewport.Model
-	currentChoiceindex int
-	inputmode          int
-	err                error
-}
+type (
+	inputmodeEnum int
+
+	model struct {
+		messagesviewport   viewport.Model
+		messages           []string
+		textarea           textarea.Model
+		pluginviewport     viewport.Model
+		plugins            []string
+		currentPluginindex int
+		choices            []string
+		choicesviewport    viewport.Model
+		currentChoiceindex int
+		inputmode          inputmodeEnum
+		err                error
+	}
+)
+
+const (
+	Typing inputmodeEnum = iota
+	SelectPlugin
+	SelectCandidate
+)
 
 func initialModel() model {
 	ta := textarea.New()
@@ -60,14 +71,13 @@ func initialModel() model {
 	ta.ShowLineNumbers = false
 	ta.KeyMap.InsertNewline.SetEnabled(true)
 
-	mvp := viewport.New(30, 5)
+	mvp := viewport.New(30, 8)
 	mvp.SetContent(`Bite-Poc is poc of my new IME `)
 
 	pvp := viewport.New(100, 2)
 	pvp.SetContent(GetPluginStr(plugins, 0))
 
 	cvp := viewport.New(100, 20)
-	cvp.SetContent("[Empty]")
 
 	return model{
 		textarea:           ta,
@@ -109,42 +119,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			m.inputmode = 0
+			m.inputmode = Typing
 			return m, nil
 		case "up", "ctrl+k":
-			if m.inputmode == 2 {
-				m.currentChoiceindex = 0
-			}
-			m.inputmode = 1
+			m.inputmode = SelectCandidate
 			if m.currentChoiceindex > 0 {
 				m.currentChoiceindex = m.currentChoiceindex - 1
 			}
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, nil
 		case "down", "ctrl+j":
-			if m.inputmode == 2 {
-				m.currentChoiceindex = 0
-			}
-			m.inputmode = 1
+			m.inputmode = SelectCandidate
 			if m.currentChoiceindex < len(m.choices)-1 {
 				m.currentChoiceindex = m.currentChoiceindex + 1
 			}
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, nil
 		case "ctrl+l":
-			m.inputmode = 2
+			m.inputmode = SelectPlugin
 			m.currentChoiceindex = 0
 			if m.currentPluginindex < len(m.plugins)-1 {
 				m.currentPluginindex = m.currentPluginindex + 1
 			}
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 
 			return m, nil
 		case "ctrl+h":
-			m.inputmode = 2
+			m.inputmode = SelectPlugin
 			m.currentChoiceindex = 0
 			if m.currentPluginindex > 0 {
 				m.currentPluginindex = m.currentPluginindex - 1
@@ -152,14 +156,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 			return m, nil
 		case "enter":
-			if m.inputmode == 1 {
-				if len(m.choices) > 0 && m.currentChoiceindex < len(m.choices) {
-					m.textarea.SetValue(m.choices[m.currentChoiceindex])
-				}
+			if len(m.choices) > 0 && m.currentChoiceindex < len(m.choices) {
+				m.textarea.SetValue(m.choices[m.currentChoiceindex])
 			}
 			v := m.textarea.Value()
 
@@ -177,6 +179,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea.Reset()
 			m.choices = []string{}
 			m.choicesviewport.SetContent("")
+			m.currentPluginindex = 0
+			m.pluginviewport.SetContent(GetPluginStr(m.plugins, m.currentPluginindex))
 			return m, nil
 		default:
 			var cmd tea.Cmd
@@ -186,7 +190,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			currentPlugin := m.plugins[m.currentPluginindex]
 			m.choices = GetCandidate(currentPlugin, m.textarea.Value())
 
-			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.inputmode, m.currentChoiceindex))
+			m.choicesviewport.SetContent(GetCandidateStr(m.choices, m.currentChoiceindex))
 			return m, cmd
 		}
 
@@ -213,13 +217,13 @@ func GetPluginStr(plugins []string, current int) string {
 	return strings.Join(pluginstrs, " ")
 }
 
-func GetCandidateStr(choices []string, mode, current int) string {
+func GetCandidateStr(choices []string, current int) string {
 	var choicestrs []string
 	for i, c := range choices {
-		if i == current && mode == 1 {
-			choicestrs = append(choicestrs, currentChoicestyle.Render(c))
+		if i == current {
+			choicestrs = append(choicestrs, fmt.Sprintf("▶ %s", currentChoicestyle.Render(c)))
 		} else {
-			choicestrs = append(choicestrs, c)
+			choicestrs = append(choicestrs, fmt.Sprintf("  %s", c))
 		}
 	}
 	return strings.Join(choicestrs, "\n")

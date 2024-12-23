@@ -14,21 +14,26 @@ const days = Array.from({ length: 12 }, (_, i) => {
   date.setDate(today.getDate() + i);
 
   let label = '';
+  let yomi = '';
   switch (i) {
     case 0:
-      label = '今日(kyou)'; // Today
+      label = '今日'; // Today
+      yomi = 'kyou';
       break;
     case 1:
-      label = '明日(asita)'; // Tomorrow
+      label = '明日'; // Tomorrow
+      yomi = 'asita';
       break;
     case 2:
       label = '明後日'; // Day after tomorrow
+      yomi = 'asatte';
       break;
     default:
       label = `${i}日後`; // n days later
+      yomi = `${i}nichigo`;
   }
 
-  return `${label} (${formatDate(date)})`;
+  return { label, yomi }
 });
 
 // 時間帯の設定
@@ -97,14 +102,15 @@ function filterSchedules(input) {
 
     const nameMatch = meeting.name.toLowerCase().includes(lowerInput);
     const yomiMatch = meeting.yomi.toLowerCase().includes(lowerInput);
-    const dateMatch = date.toLowerCase().includes(lowerInput);
+    const dateMatch = date.yomi.toLowerCase().includes(lowerInput)
+      || date.label.toLowerCase().includes(lowerInput);
     const timeMatch = time.toLowerCase().includes(lowerInput);
 
     return nameMatch || yomiMatch || dateMatch || timeMatch;
   });
 
   return result.map(({ date, time, meeting }) => {
-    return `${date} ${time} ${meeting.name}`;
+    return `${date.label} ${time} ${meeting.name}`;
   })
 }
 
