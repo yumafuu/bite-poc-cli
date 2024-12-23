@@ -1,4 +1,4 @@
-module github.com/yumafuu/bite-poc-cli
+module github.com/yumafuu/bite-poc-cli/core
 
 go 1.23.3
 
